@@ -40,9 +40,9 @@ runs:
     - name: Debug
       run: |
         # echo events
-        echo ${{ github.event_name }}
-        echo ${{ toJSON(github.event.issue.labels) }}
-        echo ${{ toJSON(github.event.pull_request.labels) }}
+        echo "${{ github.event_name }}"
+        echo "${{ toJSON(github.event.issue.labels) }}"
+        echo "${{ toJSON(github.event.pull_request.labels) }}"
       shell: bash
 
     - name: PR precheck
