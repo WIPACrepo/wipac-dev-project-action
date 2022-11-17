@@ -43,6 +43,7 @@ runs:
         echo ${{ github.event_name }}
         echo ${{ github.event.issue.labels }}
         echo ${{ github.event.pull_request.labels }}
+      shell: bash
 
     - name: PR precheck
       if: |
