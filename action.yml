@@ -41,8 +41,8 @@ runs:
       run: |
         # echo events
         echo ${{ github.event_name }}
-        echo ${{ github.event.issue.labels }}
-        echo ${{ github.event.pull_request.labels }}
+        echo ${{ toJSON(github.event.issue.labels) }}
+        echo ${{ toJSON(github.event.pull_request.labels) }}
       shell: bash
 
     - name: PR precheck
@@ -57,7 +57,7 @@ runs:
 
     - name: Issue precheck
       if: |
-        github.event_name == 'issue' &&
+        github.event_name == 'issues' &&
         (
         contains(github.event.issue.labels.*.name, 'dependencies') ||
         contains(github.event.issue.labels.*.name, 'urgent') ||
