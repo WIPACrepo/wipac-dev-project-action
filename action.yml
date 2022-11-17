@@ -27,8 +27,9 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set Env Variables
+    - name: Set env variables
       run: |
+        # Set env variables
         # need for graphql:
         echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> "$GITHUB_ENV"
         # nice to have down stream:
@@ -36,16 +37,17 @@ runs:
         echo "PROJECT_NUMBER=${{ inputs.project_number }}" >> "$GITHUB_ENV"
       shell: bash
 
-    - name: PR Precheck
+    - name: PR precheck
       if: |
         github.event_name == 'pull_request'
       # want labels?
       # use contains(github.event.pull_request.labels.*.name, 'dependencies')
       run: |
+        # PR precheck
         echo "ADD_PR=true" >> "$GITHUB_ENV"
       shell: bash
 
-    - name: Issue Precheck
+    - name: Issue precheck
       if: |
         github.event_name == 'issue' &&
         (
@@ -55,12 +57,14 @@ runs:
         contains(github.event.issue.labels.*.name, 'bug')
         )
       run: |
+        # Issue precheck
         echo "ADD_ISSUE=true" >> "$GITHUB_ENV"
       shell: bash
 
     - name: Get project data
       if: env.ADD_ISSUE == 'true' || env.ADD_PR == 'true'
       run: |
+        # Get project data
         gh api graphql -f query='
           query($org: String!, $number: Int!) {
             organization(login: $org){
@@ -94,6 +98,7 @@ runs:
       env:
         ISSUE_ID: ${{ github.event.issue.node_id }}
       run: |
+        # Add issue to project
         item_id="$( gh api graphql -f query='
           mutation($project:ID!, $issue:ID!) {
             addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
@@ -109,6 +114,7 @@ runs:
       env:
         PR_ID: ${{ github.event.pull_request.node_id }}
       run: |
+        # Add PR to project
         item_id="$( gh api graphql -f query='
           mutation($project:ID!, $pr:ID!) {
             addProjectV2ItemById(input: {projectId: $project, contentId: $pr}) {
