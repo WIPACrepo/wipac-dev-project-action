@@ -29,7 +29,7 @@ runs:
   steps:
     - name: Set Env Variables
       run: |
-        # neede for graphql:
+        # need for graphql:
         echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> "$GITHUB_ENV"
         # nice to have down stream:
         echo "ORGANIZATION=${{ inputs.organization }}" >> "$GITHUB_ENV"
@@ -52,7 +52,7 @@ runs:
         contains(github.event.issue.labels.*.name, 'dependencies') ||
         contains(github.event.issue.labels.*.name, 'urgent') ||
         contains(github.event.issue.labels.*.name, 'high priority') ||
-        contains(github.event.issue.labels.*.name, 'bug') ||
+        contains(github.event.issue.labels.*.name, 'bug')
         )
       run: |
         echo "ADD_ISSUE=true" >> "$GITHUB_ENV"
