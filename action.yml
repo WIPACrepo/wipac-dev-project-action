@@ -37,14 +37,6 @@ runs:
         echo "PROJECT_NUMBER=${{ inputs.project_number }}" >> "$GITHUB_ENV"
       shell: bash
 
-    - name: Debug
-      run: |
-        # echo events
-        echo "${{ github.event_name }}"
-        echo "${{ toJSON(github.event.issue.labels) }}"
-        echo "${{ toJSON(github.event.pull_request.labels) }}"
-      shell: bash
-
     - name: PR precheck
       if: |
         github.event_name == 'pull_request'
