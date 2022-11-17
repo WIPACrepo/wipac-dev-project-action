@@ -1,0 +1,121 @@
+name: 'wipac-dev-project-action'
+description: 'GitHub Action Package for Automating GitHub Projects'
+branding:
+  icon: 'paperclip'
+  color: 'orange'
+
+inputs:
+  github_token:
+    description: 'a PAT with project write permissions'
+    required: true
+    default: ''
+  organization:
+    description: 'the organization of the project'
+    required: true
+    default: ''
+  project_number:
+    description: 'the id of the project (see url)'
+    required: true
+    default: ''
+
+
+# outputs:
+#   random-number:
+#     description: "Random number"
+#     value: ${{ steps.random-number-generator.outputs.random-id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Env Variables
+      run: |
+        # neede for graphql:
+        echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> "$GITHUB_ENV"
+        # nice to have down stream:
+        echo "ORGANIZATION=${{ inputs.organization }}" >> "$GITHUB_ENV"
+        echo "PROJECT_NUMBER=${{ inputs.project_number }}" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: PR Precheck
+      if: |
+        github.event_name == 'pull_request'
+      # want labels?
+      # use contains(github.event.pull_request.labels.*.name, 'dependencies')
+      run: |
+        echo "ADD_PR=true" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: Issue Precheck
+      if: |
+        github.event_name == 'issue' &&
+        (
+        contains(github.event.issue.labels.*.name, 'dependencies') ||
+        contains(github.event.issue.labels.*.name, 'urgent') ||
+        contains(github.event.issue.labels.*.name, 'high priority') ||
+        contains(github.event.issue.labels.*.name, 'bug') ||
+        )
+      run: |
+        echo "ADD_ISSUE=true" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: Get project data
+      if: env.ADD_ISSUE == 'true' || env.ADD_PR == 'true'
+      run: |
+        gh api graphql -f query='
+          query($org: String!, $number: Int!) {
+            organization(login: $org){
+              projectV2(number: $number) {
+                id
+                fields(first:20) {
+                  nodes {
+                    ... on ProjectV2Field {
+                      id
+                      name
+                    }
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+
+        echo 'PROJECT_ID='$(jq '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
+      shell: bash
+
+    - name: Add issue to project
+      if: env.ADD_ISSUE == 'true'
+      env:
+        ISSUE_ID: ${{ github.event.issue.node_id }}
+      run: |
+        item_id="$( gh api graphql -f query='
+          mutation($project:ID!, $issue:ID!) {
+            addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
+              item {
+                id
+              }
+            }
+          }' -f project=$PROJECT_ID -f issue=$ISSUE_ID --jq '.data.addProjectV2ItemById.projectV2Item.id')"
+      shell: bash
+
+    - name: Add PR to project
+      if: env.ADD_PR == 'true'
+      env:
+        PR_ID: ${{ github.event.pull_request.node_id }}
+      run: |
+        item_id="$( gh api graphql -f query='
+          mutation($project:ID!, $pr:ID!) {
+            addProjectV2ItemById(input: {projectId: $project, contentId: $pr}) {
+              item {
+                id
+              }
+            }
+          }' -f project=$PROJECT_ID -f pr=$PR_ID --jq '.data.addProjectV2ItemById.projectV2Item.id')"
+      shell: bash
+
